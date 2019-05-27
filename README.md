@@ -1,4 +1,4 @@
-#pd-pulqui
+# pd-pulqui #
 
 An audio limiter algorithm for soundfiles developed on [Pure-Data](https://github.com/pure-data/pure-data).
 
@@ -10,7 +10,7 @@ The algorithm first scans the given audio file and generates a "side-chain" file
 
 The Pd patch has 6 stereo channels (can also be mono) so that it can be used as a "Multi-Band Limiter". A file for each cross-over band must be supplied.
 
-##The "side-chain" file.
+## The "side-chain" file. ##
 
 We copy the original file:
 
@@ -38,7 +38,7 @@ _ _|   |   |
                
 ```
 
-##Combination.
+## Combination. ##
 
 We playback both files together and we use the "side-chain" values to do the attenuation math on the original file.
 
@@ -75,7 +75,7 @@ Limited output:
 
 ```
 
-## Intermodulation Distortion.
+## Intermodulation Distortion. ##
 
 Intermodulation distortion may be introduced with this limiter.
 
