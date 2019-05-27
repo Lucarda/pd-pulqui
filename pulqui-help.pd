@@ -1,0 +1,342 @@
+#N canvas 234 68 843 620 12;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X array wav-array 2000 float 2;
+#X coords 0 1 2000 -1 200 140 1 0 0;
+#X restore 544 34 graph;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X array wavf-array 2000 float 2;
+#X coords 0 1 2000 -1 200 140 1 0 0;
+#X restore 544 208 graph;
+#X msg 474 511 0;
+#X msg 474 486 0;
+#X floatatom 424 412 5 0 0 0 - - -;
+#N canvas 0 50 450 300 readvalues 0;
+#X msg 143 165 set \$1;
+#X msg 179 212 set \$1;
+#X obj 146 113 t f f;
+#X obj 141 250 outlet;
+#X obj 220 255 outlet;
+#X obj 139 64 inlet;
+#X obj 246 75 t f f;
+#X msg 247 52 0;
+#X obj 246 32 loadbang;
+#X obj 180 188 tabread wav-array;
+#X obj 142 142 tabread wavf-array;
+#X connect 0 0 3 0;
+#X connect 1 0 4 0;
+#X connect 2 0 10 0;
+#X connect 2 1 9 0;
+#X connect 5 0 2 0;
+#X connect 6 0 0 0;
+#X connect 6 1 1 0;
+#X connect 7 0 6 0;
+#X connect 8 0 7 0;
+#X connect 9 0 1 0;
+#X connect 10 0 0 0;
+#X restore 422 450 pd readvalues;
+#X obj 126 446 cnv 15 60 30 empty empty empty 20 12 0 14 -4034 -66577
+0;
+#X obj 138 453 pulqui;
+#X obj 158 560 soundfiler;
+#X msg 151 416 read \$1;
+#X obj 157 388 t s s;
+#X obj 154 365 symbol;
+#X obj 112 324 openpanel;
+#X obj 112 298 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 131 587 print pulqui-outname;
+#X obj 131 508 t s s;
+#X obj 188 491 print pulqui-error;
+#X text 34 30 The [pulqui] object reads a WAV file and creates another
+one with values to be used by the Pulqui-limiter.pd.;
+#X text 47 264 Second outlet: Outputs a "bang" if there's an error.
+;
+#N canvas 218 139 625 299 pulqui-explained 0;
+#X text 97 68 1) We copy the original file.;
+#X text 98 110 2) We make all values positive.;
+#X text 97 155 3) Then we scan which was the *highest value* that we
+have for the lap that *starts* whenever the sample exceeds a near zero
+value (0.01) and *stops* whenever the sample is smaller than the near
+zero value. We write the highest value on all that lap. We do this
+for all laps we find.;
+#X restore 610 474 pd pulqui-explained;
+#X text 33 73 The output file is written in the same dir as the source
+and an "f" is appended at the end. i.e an "path/foo.wav" source file
+generates a "path/foo.wavf" file.;
+#X msg 228 461 read \$1 wav-array;
+#X msg 156 533 read \$1 wavf-array;
+#X text 287 316 load an example file;
+#X text 611 452 More:;
+#N canvas 118 86 938 617 pulqui-limiter-explained 0;
+#N canvas 252 123 860 576 simple-pulqui-limiter 0;
+#X obj 152 516 dac~;
+#X floatatom 339 48 5 0 0 0 - - -;
+#X floatatom 693 73 5 0 0 0 - - -;
+#X obj 682 137 sig~;
+#X obj 290 355 *~ 0;
+#X obj 695 108 t f f;
+#X obj 703 222 expr (1-$f1)+1;
+#X obj 100 364 line~;
+#X obj 44 364 line~;
+#X msg 58 323 \$1 50;
+#X msg 114 321 \$1 50;
+#X obj 81 231 tgl 15 0 empty byp empty 17 7 0 10 -262144 -1 -1 0 1
+;
+#X obj 94 254 t f f;
+#X obj 140 473 *~;
+#X obj 190 474 *~;
+#X obj 90 12 inlet;
+#X obj 343 12 inlet;
+#X obj 692 13 inlet;
+#X obj 790 13 vsl 15 128 0 1 0 0 empty empty empty 0 -9 0 10 -262144
+-1 -1 0 1;
+#X obj 17 14 inlet;
+#X obj 14 94 switch~;
+#X obj 37 53 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
+;
+#X obj 67 284 == 1;
+#X obj 118 287 == 0;
+#X obj 703 256 t f f;
+#X floatatom 735 291 5 0 0 0 - - -;
+#X text 700 318 Overall "make up";
+#X text 422 176 avoid division by zero;
+#X obj 337 101 *~ 1999;
+#X obj 339 74 phasor~ 22.05;
+#X obj 249 136 tabread~ sound;
+#X obj 411 140 tabread~ pulqui;
+#X obj 413 206 expr~ if ($v1 == 0 \, 0.05 \, $v1);
+#X obj 337 503 expr~ if ($v2 > $v3 \, (($v1-0.01)*($v3/$v2))+0.01 \,
+$v1);
+#X obj 282 275 expr~ if ($v2 > $v3 \, $v1*($v3/$v2) \, $v1);
+#X text 390 476 this can also be used to minimize distortion;
+#X connect 1 0 29 0;
+#X connect 2 0 5 0;
+#X connect 3 0 34 2;
+#X connect 4 0 14 0;
+#X connect 5 0 3 0;
+#X connect 5 1 6 0;
+#X connect 6 0 24 0;
+#X connect 7 0 14 1;
+#X connect 8 0 13 1;
+#X connect 9 0 8 0;
+#X connect 10 0 7 0;
+#X connect 11 0 12 0;
+#X connect 12 0 22 0;
+#X connect 12 1 23 0;
+#X connect 13 0 0 0;
+#X connect 13 0 0 1;
+#X connect 14 0 0 0;
+#X connect 14 0 0 1;
+#X connect 15 0 11 0;
+#X connect 16 0 1 0;
+#X connect 17 0 2 0;
+#X connect 18 0 2 0;
+#X connect 19 0 21 0;
+#X connect 21 0 20 0;
+#X connect 22 0 9 0;
+#X connect 23 0 10 0;
+#X connect 24 0 4 1;
+#X connect 24 1 25 0;
+#X connect 28 0 30 0;
+#X connect 28 0 31 0;
+#X connect 29 0 28 0;
+#X connect 30 0 13 0;
+#X connect 30 0 34 0;
+#X connect 31 0 32 0;
+#X connect 32 0 34 1;
+#X connect 34 0 4 0;
+#X restore 639 508 pd simple-pulqui-limiter;
+#X obj 639 481 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X obj 694 445 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X obj 804 316 vsl 15 128 0 1 0 0 empty thresh empty 0 -9 0 10 -262144
+-1 -1 12700 1;
+#X obj 804 457 t f f;
+#X floatatom 836 481 5 0 0 0 - - -;
+#X text 471 478 DSP on/off subpatch -->;
+#X text 560 443 bypass limiter -->;
+#X text 697 377 threshhold -->;
+#X obj 841 16 loadbang;
+#X msg 741 215 \; pd dsp \$1 \;;
+#X obj 741 184 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+1;
+#X text 30 42 The scanned and original file are looped in a wave-table
+oscillator., f 48;
+#X text 595 536 Open the sub-patch to see how it works.;
+#X msg 841 44 \; thresh 1 \; byp 0 \;;
+#X text 765 183 <-- Pd's DSP on/off;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X array sound 2000 float 2;
+#X coords 0 1 2000 -1 200 140 1 0 0;
+#X restore 452 43 graph;
+#N canvas 0 50 450 250 (subpatch) 0;
+#X array pulqui 2000 float 2;
+#X coords 0 1 2000 -1 200 140 1 0 0;
+#X restore 451 208 graph;
+#N canvas 0 50 712 479 pulqui-load 0;
+#X obj 245 313 pulqui;
+#X obj 262 411 soundfiler;
+#X msg 246 285 read \$1;
+#X obj 252 257 t s s;
+#X obj 249 234 symbol;
+#X obj 285 23 r a;
+#X obj 382 28 r b;
+#X msg 305 316 read \$1 sound;
+#X msg 260 384 read \$1 pulqui;
+#X obj 497 58 r c;
+#X msg 265 116 example-files/sound1.wav;
+#X msg 338 165 example-files/sound2.wav;
+#X msg 402 203 example-files/sound3.wav;
+#X connect 0 0 8 0;
+#X connect 2 0 0 0;
+#X connect 3 0 2 0;
+#X connect 3 1 7 0;
+#X connect 4 0 3 0;
+#X connect 5 0 10 0;
+#X connect 6 0 11 0;
+#X connect 7 0 1 0;
+#X connect 8 0 1 0;
+#X connect 9 0 12 0;
+#X connect 10 0 4 0;
+#X connect 11 0 4 0;
+#X connect 12 0 4 0;
+#X restore 14 588 pd pulqui-load;
+#X obj 52 121 bng 15 250 50 0 a empty empty 17 7 0 10 -262144 -1 -1
+;
+#X obj 55 296 bng 15 250 50 0 b empty empty 17 7 0 10 -262144 -1 -1
+;
+#X text 30 25 This patch explains a Pulqui limiter.;
+#X text 38 191 Pull down the threshold slider.;
+#X text 74 120 <-- load example 1;
+#X text 75 295 <-- load example 2;
+#X text 17 118 1);
+#X text 17 164 2) Turn DSP on (Pd's and subpatch).;
+#X text 21 293 3);
+#X text 45 326 Move the threshold slider., f 27;
+#X obj 56 384 bng 15 250 50 0 c empty empty 17 7 0 10 -262144 -1 -1
+;
+#X text 76 383 <-- load example 2;
+#X text 22 381 4);
+#N canvas 153 92 723 594 more 0;
+#X obj 223 127 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 526 140 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 223 97 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X obj 526 110 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 223 156 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 526 169 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 287 38 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X obj 310 65 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X obj 335 89 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X obj 361 119 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 385 148 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 413 177 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 440 201 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 467 227 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 228 350 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 531 363 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 228 320 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 531 333 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 228 379 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 531 392 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 292 276 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 315 303 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 340 327 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 366 341 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 390 371 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 418 386 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 445 410 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 472 436 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 517 107 cnv 15 40 80 empty empty empty 20 12 0 14 -262144 -66577
+0;
+#X obj 525 329 cnv 15 40 80 empty empty empty 20 12 0 14 -262144 -66577
+0;
+#X obj 216 318 cnv 15 40 80 empty empty empty 20 12 0 14 -262144 -66577
+0;
+#X obj 214 95 cnv 15 40 80 empty empty empty 20 12 0 14 -262144 -66577
+0;
+#X text 170 131 0 -->;
+#X text 142 161 -0.01 -->;
+#X text 149 102 0.01 -->;
+#X text 174 354 0 -->;
+#X text 146 384 -0.01 -->;
+#X text 153 325 0.01 -->;
+#X text 153 480 Samples inside the -0.01 0.01 boundary are not affected
+but the other ones are reduced in case they are inside a lap that exceeds
+the limiter threshold. Samples near -0.01/0.01 are reduced very much
+little than the higher value ones but you can expect some distortion
+as illustrated above.;
+#X connect 0 0 1 0;
+#X connect 2 0 3 0;
+#X connect 4 0 5 0;
+#X connect 14 0 15 0;
+#X connect 16 0 17 0;
+#X connect 18 0 19 0;
+#X restore 301 457 pd more;
+#X text 48 413 Move the threshold slider., f 27;
+#X text 128 456 click here for more -->;
+#X text 37 212 This is not a nice example as something starts happening
+at the beginning and end of the loop. Try the other 2 examples., f
+47;
+#X text 25 510 5) These were laboratory examples. Try using "pulqui-limiter.pd"
+with some recorded material (vocal \, drums \, piano \, etc..)., f
+47;
+#X connect 1 0 0 0;
+#X connect 2 0 0 1;
+#X connect 3 0 4 0;
+#X connect 4 0 0 3;
+#X connect 4 1 5 0;
+#X connect 9 0 14 0;
+#X connect 11 0 10 0;
+#X restore 609 512 pd pulqui-limiter-explained;
+#X text 503 583 https://github.com/Lucarda/pd-pulqui;
+#X text 33 129 Source files can be 16 \, 24 or 32(floating point) bit.
+The output file is the same bit-depth as the source.;
+#X text 47 184 Inlet: Takes the message "read <path/file>";
+#X text 47 218 First outlet: On success outputs the path/name of the
+generated file.;
+#X msg 234 336 example-files/sound1.wav;
+#X connect 4 0 5 0;
+#X connect 5 0 2 0;
+#X connect 5 1 3 0;
+#X connect 7 0 15 0;
+#X connect 7 1 16 0;
+#X connect 9 0 7 0;
+#X connect 10 0 9 0;
+#X connect 10 1 21 0;
+#X connect 11 0 10 0;
+#X connect 12 0 11 0;
+#X connect 13 0 12 0;
+#X connect 15 0 14 0;
+#X connect 15 1 22 0;
+#X connect 21 0 8 0;
+#X connect 22 0 8 0;
+#X connect 30 0 11 0;
