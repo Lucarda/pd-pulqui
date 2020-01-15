@@ -96,7 +96,29 @@ If we limit such a signal with this limiter it starts limiting only the negative
 
 ----------------------------------
 
+## Installation. ##
 
+
+
+The easiest way is to open Pd (you must have Pd installed to use pulqui) and go to the menu **help/find externals** and type "pulqui" on the search bar. Hopefully your search results on a high-lighted pulqui version that matches your Pd and OS architecture. Click on it and the automatic installation will start.
+
+Alternatively you can find the binaries for your Pd/OS architecture in the [release](https://github.com/Lucarda/pd-pulqui/releases) section. Download and extract the one you need and place it on your Pd's externals folder.
+
+
+## Compiling ##
+
+Download and extract the sources. Then it should be straight-forward (using Linux gcc, macOS Xcode or Windows MinGW) with:
+
+```
+cd <path/to/the/pulqui-sources>
+make install
+```
+
+If you need to specify Pd's location and an output dir do:
+
+```
+make install PDDIR=<path/to/your/pd> PDLIBDIR=<path/you/want/the/output>
+```
 
 
 
