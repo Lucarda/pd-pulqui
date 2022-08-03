@@ -1,8 +1,9 @@
 /* pulqui external for Pure-Data
-// Written by Lucas Cordiviola May 2019 v0.1.0
+// Written by Lucas Cordiviola 05-2019 07-2022 v0.1.1
 // No warranties
 // See License.txt
 */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,663 +11,506 @@
 #include <stdint.h>
 #include "m_pd.h"
 
-
-
-// infoweneed
-struct infoweneed 
-{
-   uint32_t samplebytes;
-   uint8_t bitdepht;
-   uint8_t channels;
-   uint8_t bytespersample;
-   uint32_t sampleperchannel;
-};
-
-struct infoweneed linfo;
-
-// read
-struct bits24 
-{
-   uint8_t byt1;
-   uint8_t byt2;
-   uint8_t byt3;
-};
-
-struct bits24 num24;
-
-uint32_t love1 (int32_t bytes333);
-float love32 (float IEEE);
-
-int bee (uint32_t *ramptr);
-int bee32 (float *IEEEramptr);
-
-int positiveram (void);
-int positiveramIEEE (void);
-
-
-FILE *fptr; // file for reading
-FILE *wptr; // file for writing
-
-uint32_t n;
-uint32_t bytes333;
-uint32_t sampVokmain;
-float sampVokmainIEEE;
-const int MIN16 = 327;
-const int MIN24 = 83886;
-const float MIN32 = 0.01;
-uint8_t *hcbyte;
-float IEEE;
-
-
-
-uint32_t *ramch1;
-uint32_t *ramch2;
-uint32_t **ramptr;
-   
-float *IEEEramch1;
-float *IEEEramch2;
-float **IEEEramptr;
-
-char outname [MAXPDSTRING];
-char completefilename[MAXPDSTRING];
-
-
-////////////////////////////////////////////////////// pd extern
-
 static t_class *pulqui_class;
 
-
-typedef struct _pulqui {
-  t_object  x_obj;
-  t_canvas  *x_canvas;
-  t_outlet *symbol_out, *bang_out;
+typedef struct infoweneed 
+{
+    t_object  x_obj;
+    t_canvas  *x_canvas;
+    t_outlet *symbol_out, *bang_out;
+    uint32_t samplebytes;
+    uint8_t bitdepht;
+    uint8_t channels;
+    uint8_t bytespersample;
+    uint32_t sampleperchannel;
+    char filename[512];
+    char outfilename[512];
+    char datafoo[5];
+    int startdatachunk;
+    uint8_t audioformat;
+    FILE *fptr; // file for reading
+    FILE *wptr; // file for writing
+    float *ramch1;
+    float *ramch2;
 } t_pulqui;
 
+struct bytes 
+{
+    uint8_t byte1;
+    uint8_t byte2;
+    uint8_t byte3; 
+} xbytes;
+
+const char *refuse ="pulqui: error. refusing to open file. does not look like a WAV file.";
 
 
-///////////////////////
+static char pq_streq(const char *str1, const char *str2) 
+{    
+    if (0 == strcmp(str1, str2)) { 
+           return 1;
+       } else {
+           return 0;
+       }  
+}
+
+static char pq_wavinfo(t_pulqui *x)
+{
+    int i; 
+        
+    if ((x->fptr = fopen(x->filename,"rb")) == NULL){
+        logpost(x,PD_ERROR,"pulqui: Error! opening file");
+        logpost(x,2,"******************");
+        fclose(x->fptr);
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+    
+    // file sanity checks
+    fseek(x->fptr, 0, SEEK_SET);
+    fread(&x->datafoo, 4, 1, x->fptr);
+    if (!pq_streq(x->datafoo, "RIFF")) {
+        logpost(x,PD_ERROR,"%s",refuse);
+        logpost(x,2,"******************");
+        fclose(x->fptr);
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+        
+    fseek(x->fptr, 8, SEEK_SET);
+    fread(&x->datafoo, 4, 1, x->fptr);
+    if (!pq_streq(x->datafoo, "WAVE")) {
+        logpost(x,PD_ERROR,"%s",refuse);
+        logpost(x,2,"******************");
+        fclose(x->fptr);
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+    
+    fseek(x->fptr, 12, SEEK_SET);
+    fread(&x->datafoo, 4, 1, x->fptr);
+    if (!pq_streq(x->datafoo, "fmt ")) {
+        logpost(x,PD_ERROR,"%s",refuse);
+        logpost(x,2,"******************");
+        fclose(x->fptr);
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+        
+    fseek(x->fptr, 20, SEEK_SET);
+    fread(&x->audioformat, 2, 1, x->fptr);
+    //logpost(x,2,"audioformat: %d" , x->audioformat);
+    
+    
+    // get channels
+    fseek(x->fptr, 22, SEEK_SET);
+    fread(&x->channels, 1, 1, x->fptr);
+    logpost(x,2,"channels: %d" , x->channels);
 
 
+    // get bit-depth
+    fseek(x->fptr, 34, SEEK_SET);
+    fread(&x->bitdepht, 1, 1, x->fptr);
+    logpost(x,2,"bit-depth: %d" , x->bitdepht);
 
+    //  bit-depth to bytes
+    x->bytespersample = x->bitdepht / 8;
+    //logpost(x,2,"bytespersample: %d" , x->bytespersample);
+
+    // go to the "data" chunk
+    for (i=0; i<200; i++) {
+        fseek(x->fptr, i, SEEK_SET);
+        fread(&x->datafoo, 4, 1, x->fptr);
+        if (pq_streq(x->datafoo, "data")) { 
+            x->startdatachunk = i + 4;
+            break;
+        }
+    }
+
+    // get databytes 
+    fseek(x->fptr, x->startdatachunk, SEEK_SET);
+    fread(&x->samplebytes, 4, 1, x->fptr);
+    //logpost(x,2,"samplebytes: %d" , x->samplebytes);   
+
+    //  samples per channel
+    x->sampleperchannel = (x->samplebytes / x->bytespersample) / x->channels;
+    logpost(x,2,"samples per channel: %d" , x->sampleperchannel);
+   
+    fclose(x->fptr);
+    
+    if ((x->audioformat == 1) && (x->bitdepht == 32)) {
+        logpost(x,PD_ERROR,"pulqui: error. refusing to open 32bit 'pcm' file. only 32bit 'float' files are supported.");
+        logpost(x,2,"******************");
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+        
+    if (x->channels > 2) {
+        logpost(x,PD_ERROR,"pulqui: error. refusing to open wav file with more than 2 chahnnels");
+        logpost(x,2,"******************");
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+    return 1;
+}
+
+static char pq_allocate_array(t_pulqui *x)
+{
+    x->ramch1 = (float *) getbytes((x->sampleperchannel * sizeof(float)) );
+    if (x->ramch1 == NULL) {
+        logpost(x,PD_ERROR,"pulqui: Error! memory trouble");
+        logpost(x,2,"******************");
+        freebytes(x->ramch1,sizeof(x->ramch1));
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+    //logpost(x,2,"allocate bytes for channel 1: %d", (x->sampleperchannel * sizeof(float)) );
+    
+    if (x->channels == 2) {
+        x->ramch2 = (float *) getbytes((x->sampleperchannel * sizeof(float)) );
+        if (x->ramch2 == NULL) {
+            logpost(x,PD_ERROR,"pulqui: Error! memory trouble");
+            logpost(x,2,"******************");
+            freebytes(x->ramch2,sizeof(x->ramch2));
+            outlet_bang(x->bang_out);
+            return 0;
+        }
+        //logpost(x,2,"allocate bytes for channel 2: %d", (x->sampleperchannel * sizeof(float)) );
+    }
+    logpost(x,2,"allocated bytes in RAM: %d", (x->sampleperchannel * sizeof(float)) );
+    
+    return 1;
+}
+
+static float pq_positive_16(t_pulqui *x)
+{
+    int sample;
+    char sign;
+    
+    fread(&xbytes, 2, 1, x->fptr);
+    sample = xbytes.byte1 + (xbytes.byte2 << 8);
+    sign = sample >> 15;
+    if (sign) {
+        return (((sample - 65536.) / 32768) * -1);
+    } else {
+        return (sample / 32768.);
+    }   
+}
+
+static void pq_wavtoarray16(t_pulqui *x)
+{
+    uint32_t i;
+    
+    for (i=0; i < (x->sampleperchannel); i++) {     
+       x->ramch1[i] = pq_positive_16(x);
+       if (x->channels == 2){
+           x->ramch2[i] = pq_positive_16(x);
+       }    
+   } 
+}
+
+static float pq_positive_24(t_pulqui *x)
+{
+    int sample;
+    char sign;
+    
+    fread(&xbytes, 3, 1, x->fptr);
+    sample = xbytes.byte1 + (xbytes.byte2 << 8) + (xbytes.byte3 << 16);
+    sign = sample >> 23;
+    if (sign) {
+        return (((sample - 16777216.) / 8388608) * -1);
+    } else {
+        return (sample / 8388608.);
+    }   
+}
+
+static void pq_wavtoarray24(t_pulqui *x)
+{
+    uint32_t i;
+   
+    for (i=0; i < (x->sampleperchannel); i++) {
+       x->ramch1[i] = pq_positive_24(x);
+       if (x->channels == 2){
+           x->ramch2[i] = pq_positive_24(x);
+       }   
+    }
+}
+
+static float pq_positive_32(t_pulqui *x)
+{
+    float sample;   
+    
+    fread(&sample, 4, 1, x->fptr);    
+    if (sample < 0) {
+        return (sample * -1);
+    } else {
+        return (sample);
+    }   
+}
+
+static void pq_wavtoarray32(t_pulqui *x)
+{
+    uint32_t i;
+   
+    for (i=0; i < (x->sampleperchannel); i++) {
+        x->ramch1[i] = pq_positive_32(x);
+        if (x->channels == 2){
+            x->ramch2[i] = pq_positive_32(x);
+       }
+   }
+}
+
+static void pq_zero_last_sample(t_pulqui *x)
+{
+    x->ramch1[x->sampleperchannel] = 0;
+    if (x->channels == 2){
+            x->ramch2[x->sampleperchannel] = 0;
+        }    
+}
+
+static void pq_bee32(t_pulqui *x, float *IEEEramptr) {
+
+    uint32_t pos;
+    uint32_t startpos;
+    uint32_t endpos;
+    float peakIEEE;
+    float miniv32 = 0.01;
+    
+    startpos = 0;
+    endpos = 0;
+    pos = 0;
+   
+    LOOP:while (pos < x->sampleperchannel ) {
+
+        IEEEramptr[pos] = 0;   
+        pos++;
+        if ( IEEEramptr[pos] > miniv32) {       
+            break;
+        }
+    }   
+    startpos = pos;
+    peakIEEE = 0;
+    while (pos < x->sampleperchannel ) {
+  
+        pos++;
+        if (IEEEramptr[pos] > peakIEEE){
+            peakIEEE = IEEEramptr[pos];
+        }
+        if( IEEEramptr[pos] < miniv32) {        
+            break;
+        }
+    }   
+    endpos = pos;
+    for (pos = startpos; pos < endpos; pos++){
+
+        IEEEramptr[pos] = peakIEEE;
+    }
+    //endpos = pos;     
+    if (pos < x->sampleperchannel) {
+        goto LOOP;
+    }
+}
+
+static void pq_do_pq(t_pulqui *x) 
+{   
+    pq_bee32(x, x->ramch1);
+    if (x->channels == 2){
+        pq_bee32(x, x->ramch2);
+    }
+}
+
+static char pq_openwritefile(t_pulqui *x)
+{
+    int n;
+    uint8_t *byte;
+    x->fptr = fopen(x->filename,"rb");
+    if ((x->wptr = fopen(x->outfilename,"wb")) == NULL){
+        logpost(x,PD_ERROR,"pulqui: Error opening file for writing");
+        logpost(x,2,"******************");
+        fclose(x->wptr);
+        outlet_bang(x->bang_out);
+        return 0;
+    }
+   
+    fseek(x->fptr, 0, SEEK_SET);
+    fseek(x->wptr, 0, SEEK_SET);
+    
+    //copy the header   
+    for(n = 0; n < x->startdatachunk+4; n++) {
+        fread(&byte, 1, 1, x->fptr);
+        fwrite(&byte, 1, 1, x->wptr);
+    }
+    
+    fclose(x->fptr);
+    return 1;
+}
+
+static void pq_write16(t_pulqui *x)
+{
+    uint32_t i;
+    int sample;
+    
+    for (i=0; i < (x->sampleperchannel); i++) {
+        sample = (int)(x->ramch1[i] * 32768);
+        fwrite(&sample, 2, 1, x->wptr);
+        if (x->channels == 2){
+            sample = (int)(x->ramch2[i] * 32768);
+            fwrite(&sample, 2, 1, x->wptr);
+        }
+    }    
+}
+
+static void pq_write24(t_pulqui *x)
+{
+    uint32_t i;
+    int sample;
+    
+    for (i=0; i < (x->sampleperchannel); i++) {
+        sample = (int)(x->ramch1[i] * 8388608);
+        fwrite(&sample, 3, 1, x->wptr);
+        if (x->channels == 2){
+            sample = (int)(x->ramch2[i] * 8388608);
+            fwrite(&sample, 3, 1, x->wptr);
+        }
+    }    
+}
+
+static void pq_write32(t_pulqui *x)
+{
+    uint32_t i;
+    
+    for (i=0; i < (x->sampleperchannel); i++) {
+        fwrite(&x->ramch1[i], 4, 1, x->wptr);
+        if (x->channels == 2){
+            fwrite(&x->ramch2[i], 4, 1, x->wptr);
+        }
+    }    
+}
+
+static void pq_do_writefile(t_pulqui *x)
+{
+
+    if (x->bitdepht == 16) {
+        pq_write16(x);        
+    } else if (x->bitdepht == 24) {
+        pq_write24(x);        
+    } else if (x->bitdepht == 32) {
+        pq_write32(x);
+    }
+    fclose(x->wptr);
+    freebytes(x->ramch1,sizeof(x->ramch1));
+    freebytes(x->ramch2,sizeof(x->ramch2));
+}
+
+static void pq_do_positive_array(t_pulqui *x)
+{
+    
+    x->fptr = fopen(x->filename,"rb");
+    fseek(x->fptr, x->startdatachunk+4, SEEK_SET);
+        
+    if (x->bitdepht == 16) {
+        pq_wavtoarray16(x);        
+    } else if (x->bitdepht == 24) {
+        pq_wavtoarray24(x);        
+    } else if (x->bitdepht == 32) {
+        pq_wavtoarray32(x);
+    }
+    fclose(x->fptr);
+}
+
+
+static char pq_filer(t_pulqui *x, t_symbol *name) {
+    
+    char completefilename[MAXPDSTRING];
+
+    const char* filename = name->s_name;
+    char realdir[MAXPDSTRING], *realname = NULL;
+    int fd;
+    fd = canvas_open(x->x_canvas, filename, "", realdir, &realname, MAXPDSTRING, 0);
+        if(fd < 0){
+            logpost(NULL,2," ");
+            logpost(NULL,2,"***** pulqui *****");
+            logpost(x, PD_ERROR, "pulqui: can't find file: %s", filename);
+            logpost(NULL,2,"******************");
+            outlet_bang(x->bang_out);
+            return 0;
+        }
+
+    sys_close(fd);
+    strcpy(completefilename, realdir);
+    strcat(completefilename, "/");
+    strcat(completefilename, realname);
+    strcpy(x->filename, completefilename);
+    strcpy(x->outfilename, x->filename);
+    strcat(x->outfilename, "f");
+    return 1;
+}                                                                                   
 
 void pulqui_main(t_pulqui *x, t_symbol *filename)
 {
+    
+    if(!pq_filer(x, filename)) {
+    return;
+    }
+    logpost(x,2," ");
+    logpost(x,2,"***** pulqui *****");
+    logpost(x,2,"file: %s", filename->s_name);    
 
-   
-  /* taken from iem's soundfile_info */
-  
-  if(filename->s_name[0] == '/')/*make complete path + filename*/
-  {
-    strcpy(completefilename, filename->s_name);
-  }
-  else if( (((filename->s_name[0] >= 'A')&&(filename->s_name[0] <= 'Z')) || ((filename->s_name[0] >= 'a')&&(filename->s_name[0] <= 'z'))) &&
-    (filename->s_name[1] == ':') && (filename->s_name[2] == '/') )
-  {
-    strcpy(completefilename, filename->s_name);
-  }
-  else
-  {
-    strcpy(completefilename, canvas_getdir(x->x_canvas)->s_name);
-    strcat(completefilename, "/");
-    strcat(completefilename, filename->s_name);
-  }
+    if(!pq_wavinfo(x)) {
+    return;
+    }
+    
+    if(!pq_allocate_array(x)) {
+    return;
+    }
+    
+    pq_do_positive_array(x);
+    pq_zero_last_sample(x);
+    logpost(x,2,"started scanning...");
+    pq_do_pq(x);
+    
+    if(!pq_openwritefile(x)) {
+    return;
+    }
 
-
-/* </soundfile_info> */
-
-
-   sprintf(outname,"%sf", completefilename);
-
-   post("***** pulqui *****") ;
-   post("file: %s", completefilename);
-
-
-   
-   if ((fptr = fopen(completefilename,"rb")) == NULL){
-       post("Error opening file for reading.");
-		  fclose(fptr);
-		  outlet_bang(x->bang_out);
-		goto pq_end ;
-   }
-   
-
-    // get channels
-   fseek(fptr, 22, SEEK_SET);
-   fread(&linfo.channels, 1, 1, fptr);
-   post("channels: %d" , linfo.channels);
-   
-    // get bit-depth
-   fseek(fptr, 34, SEEK_SET);
-   fread(&linfo.bitdepht, 1, 1, fptr);
-   post("bit-depth: %d" , linfo.bitdepht);
-   
-   if (!((linfo.bitdepht == 16) || ((linfo.bitdepht == 24) || (linfo.bitdepht == 32)))     ) {
-   post("Error , doesn't look like a 16, 24 or 32 bit WAV file.");
-   outlet_bang(x->bang_out);
-   goto pq_end ;
-   }
-   
-   
-      
-    //  bit-depth to bytes
-   linfo.bytespersample = linfo.bitdepht / 8;
-
-   
-    // get databytes 
-   fseek(fptr, 40, SEEK_SET);
-   fread(&linfo.samplebytes, 4, 1, fptr);
-
-   
-   //  samples per channel
-   linfo.sampleperchannel = (linfo.samplebytes / linfo.bytespersample) / linfo.channels;
-
-   
-
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   ///////////////////////ram thing3
-	
-
-   
-   if (linfo.bitdepht == 32) 
-	   
-   	{
-   IEEEramch1 = (void *) getbytes (linfo.sampleperchannel * 4 + 1);  
-   if (IEEEramch1 == NULL){
-       post("Error! memory trouble");
-	   //free(IEEEramch1);
-	   outlet_bang(x->bang_out);
-	   goto pq_end ;
-       
-   }   
-   
-   if (linfo.channels == 2){
-	   IEEEramch2 = (void *) getbytes (linfo.sampleperchannel * 4 + 1);
-       if (IEEEramch2 == NULL){
-       post("Error! memory trouble");
-	   //free(IEEEramch2);
-	   outlet_bang(x->bang_out);
-	   goto pq_end ;
-	   
-	   }
-   }
-
-} else {
-   ramch1 = (void *) getbytes (linfo.sampleperchannel * 4 + 1);  
-   if (ramch1 == NULL){
-       post("Error! memory trouble");
-       //free(ramch1);
-	   outlet_bang(x->bang_out);
-	   goto pq_end ;
-	   
-   }   
-   
-   if (linfo.channels == 2){
-	   ramch2 = (void *) getbytes (linfo.sampleperchannel * 4 + 1);
-       if (ramch2 == NULL){
-       post("Error! memory trouble");
-       //free(ramch2);
-	   outlet_bang(x->bang_out);
-	   goto pq_end ;
-	   
-	   }
-
-   }
-	
+    pq_do_writefile(x);
+    logpost(x,2,"RAM deallocated.");
+    logpost(x,2,"******************");
+    outlet_symbol(x->symbol_out, gensym(x->outfilename));
+    
 }
 
-
-   ///////////////////////////////// open file for writing
-   
-
-   if ((wptr = fopen(outname,"wb")) == NULL){
-       post("Error opening file for writing");
-		fclose(wptr);
-		outlet_bang(x->bang_out);
-       goto pq_end ;
-   }   
-   
-   
-   
-   /////////////////////////////////
-   
-   post("RAM allocation: %dMB" , ((linfo.sampleperchannel * 4) * linfo.channels) / 1000000);
-   post("started scanning...") ;  
-  
-   
-   
-   ////////////////////////////// load all positive to ram array
-   
-  if (linfo.bitdepht == 32) {
-   positiveramIEEE();
-  }else {
-	positiveram();	
-	}
-   
-  
-   
-////////////////////////////// do the thing
-  if (linfo.bitdepht == 32) {
-	  
-		IEEEramptr = &IEEEramch1;   
-		bee32 (*IEEEramptr);
-			if (linfo.channels == 2){
-				IEEEramptr = &IEEEramch2;
-				bee32 (*IEEEramptr);	  
-	  } 
-	  
-		}else {
-		
-		ramptr = &ramch1;   
-		bee (*ramptr);
-			if (linfo.channels == 2){
-				ramptr = &ramch2;
-				bee (*ramptr);
-
-			}	
-		}
-
-  
-		
-	   
-   
-
-
-   
-   
-   
-   
-   //////////////////////////////////////////// write the file
-   
-   
-   //copy the header
-   
-   fseek(fptr, 0, SEEK_SET);
-   fseek(wptr, 0, SEEK_SET);
-   
-	for(n = 0; n < 44 ; n++) {
-		fread(&hcbyte, 1, 1, fptr);
-		fwrite(&hcbyte, 1, 1, wptr);
-	}
-
-  // copy the data
-  
-  if (linfo.bitdepht == 32) {
-  
-   for(n = 0; n < linfo.sampleperchannel ; n++)
-   {
-	  fwrite(&IEEEramch1[n], linfo.bytespersample, 1, wptr); 
-			if (linfo.channels == 2){
-			fwrite(&IEEEramch2[n], linfo.bytespersample, 1, wptr);
-			}	          
-		}
-  } else {
-	  
-	for(n = 0; n < linfo.sampleperchannel ; n++)
-   {
-	  fwrite(&ramch1[n], linfo.bytespersample, 1, wptr); 
-			if (linfo.channels == 2){
-			fwrite(&ramch2[n], linfo.bytespersample, 1, wptr);
-			}  
-	  }
-	
-  }
-	
-  post("Ok, file written.") ;
-  
-  
-  fclose(fptr);
-  fclose(wptr);
-  if (linfo.bitdepht == 32) {
-	  
-	  //free(IEEEramch1);
-	  freebytes(IEEEramch1, (linfo.sampleperchannel * 4 + 1));
-	   
-
-		   if (linfo.channels == 2){
-			//free(IEEEramch2);
-			freebytes(IEEEramch2, (linfo.sampleperchannel * 4 + 1));
-			
-						
-					}		
-			}; 
-
-		    if ((linfo.bitdepht == 16) || (linfo.bitdepht == 24)) {
-				//free(ramch1);
-				freebytes(ramch1, (linfo.sampleperchannel * 4 + 1));
-				
-			if (linfo.channels == 2){
-					//free(ramch2);
-					freebytes(ramch2, (linfo.sampleperchannel * 4 + 1));
-					
-					}		
-			};
-		
-
-  post("RAM deallocated.") ;
-  post("******************") ;
-  
-  num24.byt3 = 0; // free it because ...
-  
-  outlet_symbol(x->symbol_out, gensym(outname));
-  
-  pq_end: ;
-  
-   
-
-   
-   
- 
-   
-   };
-
-
-
-
-/////////////////////////////////// Functions //////////////////////
-
-
-
-
-
-
-
-
-
-
-//////////////// for 16 or 24 bit
-int bee (uint32_t *ramptr) {
-	
-	
-uint32_t pos;
-uint32_t startpos;
-uint32_t endpos;
-uint32_t peak;
-int miniv;
-
-if (linfo.bitdepht == 24) {
-	miniv = MIN24;}
-	else{miniv = MIN16;}
-
-	startpos = 0;
-	endpos = 0;
-	pos = 0;
-   
-
-   
-   LOOP:while( pos < linfo.sampleperchannel ) {
-	   
-	  ramptr[pos] = 0;
-  
-      pos++;
-		
-      if( ramptr[pos] > miniv) {
-         
-         break;
-      }
-   }
-   
-   startpos = pos;
-   peak = 0;
-   
-   while( pos < linfo.sampleperchannel ) {
-  
-      pos++;
-	  
-	  if (ramptr[pos] > peak){
-		  peak = ramptr[pos];
-	  }
-		
-      if( ramptr[pos] < miniv) {
-         
-         break;
-      }
-   }
-   
-   endpos = pos;
-   for(pos = startpos; pos < endpos ; pos++){
-	   
-	ramptr[pos] = peak;
-   }
-   endpos = pos;
-   
-   
-   if (pos < linfo.sampleperchannel) {
-	   goto LOOP;
-   }
-  
-   
-
-
-return 0;
-  
-
-}
-
-
-//////////////// for 32bit
-
-
-int bee32 (float *IEEEramptr) {
-	
-	
-uint32_t pos;
-uint32_t startpos;
-uint32_t endpos;
-float peakIEEE;
-float miniv32;
-
-    miniv32 = MIN32;
-	startpos = 0;
-	endpos = 0;
-	pos = 0;
-   
-
-   
-   LOOP:while( pos < linfo.sampleperchannel ) {
-	   
-	  IEEEramptr[pos] = 0; 
-  
-      pos++;
-		
-      if( IEEEramptr[pos] > miniv32) {
-         
-         break;
-      }
-   }
-   
-   startpos = pos;
-   peakIEEE = 0;
-   
-   while( pos < linfo.sampleperchannel ) {
-  
-      pos++;
-	  
-	  if (IEEEramptr[pos] > peakIEEE){
-		  peakIEEE = IEEEramptr[pos];
-	  }
-	  
-	  
-		
-      if( IEEEramptr[pos] < miniv32) {
-         
-         break;
-      }
-   }
-   
-   endpos = pos;
-   for(pos = startpos; pos < endpos ; pos++){
-	   
-	IEEEramptr[pos] = peakIEEE;
-   }
-   endpos = pos;
-   
-   
-   if (pos < linfo.sampleperchannel) {
-	   goto LOOP;
-   }
-  
-   
-
-
-return 0;
-  
-
-}
-
-
-
-
-
-
-
-
-
-
-
-/////////////////////////////////////////////////////////////////////
-
-
-uint32_t love1 (int32_t bytes333) {
-	
-		
-uint8_t msb;
-uint32_t sampVok;
-
-
-
-if (linfo.bitdepht == 24){msb = bytes333 >> 23; }
-	else{msb = bytes333 >> 15;}
-
-
- 
-if (msb == 0){
-	sampVok = bytes333;} 
-	else { 
-		if (linfo.bitdepht == 24){
-			sampVok = (bytes333 - 16777216) * -1;}
-			else{sampVok = (bytes333 - 65536) * -1;}
-	}
-
-   return sampVok;
-  
-	
-};// love1
-
-/////////////////////////////////////////////////////////////////////
-
-
-float love32 (float IEEE) {
-	
-		
-float sampVokIEEE;
-
- 
-if (IEEE < 0){
-	sampVokIEEE = IEEE * -1;}
-	else{sampVokIEEE = IEEE;}
- return sampVokIEEE;
-
-};// love32
-
-///////////////////////////
-
-int positiveram (void) {
-	
-   fseek(fptr, 44, SEEK_SET);
-   
-   for(n = 0; n < linfo.sampleperchannel ; n++)
-   {
-	   
-	  fread(&num24, linfo.bytespersample, 1, fptr); 
-	  bytes333 = num24.byt1 + (num24.byt2 << 8) + (num24.byt3 << 16); 
-	  sampVokmain = love1(bytes333);
-	  *(ramch1 + n) = sampVokmain ;
-	  
-	  
-		if (linfo.channels == 2){
-	   
-			fread(&num24, linfo.bytespersample, 1, fptr); 
-			bytes333 = num24.byt1 + (num24.byt2 << 8) + (num24.byt3 << 16); 
-			sampVokmain = love1(bytes333);
-			*(ramch2 + n) = sampVokmain ;
-       
-		}
-	 
-   }
-   return 0;
-}
-
-
-///////////////////////////
-
-int positiveramIEEE (void) {
-	
-   fseek(fptr, 44, SEEK_SET);
-   
-   for(n = 0; n < linfo.sampleperchannel ; n++)
-   {
-	  fread(&IEEE, linfo.bytespersample, 1, fptr);
-	  sampVokmainIEEE = love32(IEEE);
-	  *(IEEEramch1 + n) = sampVokmainIEEE ;
-	  
-	  
-	  
-		if (linfo.channels == 2){
-			
-			fread(&IEEE, linfo.bytespersample, 1, fptr); 
-			sampVokmainIEEE = love32(IEEE);
-			*(IEEEramch2 + n) = sampVokmainIEEE ;	   
-
-      
-		}
-	 
-   }
-   
-   
-   return 0;
-}
-
-
-///////////////////////
-
-
-
-/////////////// pd things
 
 
 
 void *pulqui_new(void)
 {
 
-  t_pulqui *x = (t_pulqui *)pd_new(pulqui_class);
+    t_pulqui *x = (t_pulqui *)pd_new(pulqui_class);
    
-   x->x_canvas = canvas_getcurrent();
-   x->symbol_out = outlet_new(&x->x_obj, &s_symbol);
-   x->bang_out = outlet_new(&x->x_obj, &s_bang);
+    x->x_canvas = canvas_getcurrent();
+    x->symbol_out = outlet_new(&x->x_obj, &s_symbol);
+    x->bang_out = outlet_new(&x->x_obj, &s_bang);
    
-  return (void *)x;
+    return (void *)x;
 }
 
 
 
 void pulqui_setup(void) {
+    
+    logpost(NULL,2," ");    
+    logpost(NULL,2,"***** pulqui *****");
+    logpost(NULL,2,"loaded version 0.1.1");
+    logpost(NULL,2,"******************");
 
-  pulqui_class = class_new(gensym("pulqui"),      
-			       (t_newmethod)pulqui_new,
-			       0 /*(t_method)pulqui_free*/,                          
-			       sizeof(t_pulqui),       
-			       CLASS_DEFAULT,               
-			       0);                        
+    pulqui_class = class_new(gensym("pulqui"),      
+                    (t_newmethod)pulqui_new,
+                    0 /*(t_method)pulqui_free*/,                          
+                    sizeof(t_pulqui),       
+                    CLASS_DEFAULT,               
+                    0);                        
 
    
-  class_addmethod(pulqui_class, (t_method)pulqui_main, gensym("read"), A_SYMBOL, 0);
+    class_addmethod(pulqui_class, (t_method)pulqui_main, gensym("read"), A_SYMBOL, 0);
  
 }

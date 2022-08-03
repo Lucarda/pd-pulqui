@@ -16,7 +16,7 @@ example-files \
 
 
 makefiles = \
-pq-cli-app/makefile \
+pq-cli-app/Makefile \
 
 forLinux = datafiles += \
 pq-cli-app/pq \

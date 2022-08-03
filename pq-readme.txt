@@ -17,7 +17,7 @@ Linux/macOS:
 
 You have to give read/write permission to pq. Open a terminal on its dir an do:
 
-	sudo chmod 775 pq
+	sudo chmod 775 ./pq
 	
 Then create a script (some-name.sh) in the same dir as pq:
 
