@@ -1,25 +1,15 @@
-uname := $(shell uname)
+CC = gcc
+CFLAGS  = -Wall 
 
-ifeq ($(findstring $(uname), Linux GNU GNU/kFreeBSD), $(uname))
-install: pq.c	
-	gcc -o pq pq.c
-	strip pq
-clean: 
-	rm -f pq
-endif
+install: all
 
-ifeq ($(uname), Darwin)
-install: pq.c
-	gcc -o pq pq.c
-	strip pq
-clean: 
-	rm -f pq
-endif
+all: pq
 
-ifeq ($(filter MINGW% MSYS%, $(uname)), $(uname))
-install: pq.c	
-	gcc -o pq pq.c
-	strip pq.exe
+pq: pq.o
+	$(CC) $(CFLAGS) -O3 -o pq pq.o -Wl,-s
+
+pq.o: pq.c 
+	$(CC) $(CFLAGS) -c pq.c 
+	
 clean: 
-	rm -f pq.exe	
-endif
+	$(RM) pq *.o
