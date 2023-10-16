@@ -1,5 +1,9 @@
 Changelog for pd-pulqui
 
+v0.1.2, dated 16-10-2023
+- Change license.
+- Better handling of int conversion.
+
 v0.1.1, dated 03-08-2022
 - C code reorganized.
 - Better protection when reading WAV headers.
