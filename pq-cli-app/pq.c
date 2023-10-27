@@ -44,7 +44,7 @@ struct bytes
     uint8_t byte3;
 } xbytes;
 
-static const char *version = "0.1.2";
+static const char *version = "0.2.0";
 
 static const char *refuse ="\nerror: refusing to open file. does not look like a WAV file.\n";
 
@@ -179,7 +179,7 @@ static void pq_allocate_array(void)
     printf("allocated bytes in RAM: %d MB\n", ((info.sampleperchannel * 4) * info.channels) / 1000000);
 }
 
-static float pq_positive_16(void)
+static float pq_toramch_16(void)
 {
     int sample;
     char sign;
@@ -187,10 +187,11 @@ static float pq_positive_16(void)
     fread(&xbytes, 2, 1, info.fptr);
     sample = xbytes.byte1 + (xbytes.byte2 << 8);
     sign = sample >> 15;
-    if (sign) xsample = (((sample - FULL16BIT) / HALF16BIT) * -1);
-    else xsample =  (sample / HALF16BIT);
-    // protect float to not be 1 or -1: if this is the case make them 0.998
-    if (xsample > 0.998 || xsample == -1.0) xsample = 0.998;
+    if (sign) xsample = (sample - FULL16BIT) / HALF16BIT;
+    else xsample =  sample / HALF16BIT;
+    // protect float to not be 1 or -1
+    if (xsample > 0.999) xsample = 0.999;
+    if (xsample < -0.999) xsample = -0.999;
     return (xsample);
 }
 
@@ -199,12 +200,12 @@ static void pq_wavtoarray16(void)
     uint32_t i;
     for (i=0; i < (info.sampleperchannel); i++)
     {
-       info.ramch1[i] = pq_positive_16();
-       if (info.channels == 2) info.ramch2[i] = pq_positive_16();
+       info.ramch1[i] = pq_toramch_16();
+       if (info.channels == 2) info.ramch2[i] = pq_toramch_16();
     }
 }
 
-static float pq_positive_24(void)
+static float pq_toramch_24(void)
 {
     int sample;
     char sign;
@@ -212,10 +213,11 @@ static float pq_positive_24(void)
     fread(&xbytes, 3, 1, info.fptr);
     sample = xbytes.byte1 + (xbytes.byte2 << 8) + (xbytes.byte3 << 16);
     sign = sample >> 23;
-    if (sign) xsample = (((sample - FULL24BIT) / HALF24BIT) * -1);
-    else xsample = (sample / HALF24BIT);
-    // protect float to not be 1 or -1: if this is the case make them 0.998
-    if (xsample > 0.998 || xsample == -1.0) xsample = 0.998;
+    if (sign) xsample = (sample - FULL24BIT) / HALF24BIT;
+    else xsample = sample / HALF24BIT;
+    // protect float to not be 1 or -1
+    if (xsample > 0.999) xsample = 0.999;
+    if (xsample < -0.999) xsample = -0.999;
     return (xsample);
 }
 
@@ -224,17 +226,19 @@ static void pq_wavtoarray24(void)
     uint32_t i;
     for (i=0; i < (info.sampleperchannel); i++)
     {
-       info.ramch1[i] = pq_positive_24();
-       if (info.channels == 2) info.ramch2[i] = pq_positive_24();
+       info.ramch1[i] = pq_toramch_24();
+       if (info.channels == 2) info.ramch2[i] = pq_toramch_24();
     }
 }
 
-static float pq_positive_32(void)
+static float pq_toramch_32(void)
 {
     float sample;
     fread(&sample, 4, 1, info.fptr);
-    if (sample < 0) return (sample * -1);
-    else return (sample);
+    // protect float to not be 1 or -1
+    if (sample > 0.999) sample = 0.999;
+    if (sample < -0.999) sample = -0.999;
+    return (sample);
 }
 
 static void pq_wavtoarray32(void)
@@ -242,8 +246,8 @@ static void pq_wavtoarray32(void)
     uint32_t i;
     for (i=0; i < (info.sampleperchannel); i++)
     {
-        info.ramch1[i] = pq_positive_32();
-        if (info.channels == 2) info.ramch2[i] = pq_positive_32();
+        info.ramch1[i] = pq_toramch_32();
+        if (info.channels == 2) info.ramch2[i] = pq_toramch_32();
     }
 }
 
@@ -259,24 +263,22 @@ static void pq_bee32 (float *IEEEramptr)
     uint32_t startpos;
     uint32_t endpos;
     float peakIEEE;
-    float miniv32 = 0.01;
     startpos = 0;
     endpos = 0;
     pos = 0;
 
     LOOP:while (pos < info.sampleperchannel )
     {
-        IEEEramptr[pos] = 0;
+        if ( IEEEramptr[pos] > 0) break;
         pos++;
-        if ( IEEEramptr[pos] > miniv32) break;
     }
     startpos = pos;
     peakIEEE = 0;
     while (pos < info.sampleperchannel)
     {
-        pos++;
         if (IEEEramptr[pos] > peakIEEE) peakIEEE = IEEEramptr[pos];
-        if( IEEEramptr[pos] < miniv32) break;
+        if( IEEEramptr[pos] < 0) break;
+        pos++;
     }
     endpos = pos;
     for (pos = startpos; pos < endpos ; pos++)
@@ -287,10 +289,47 @@ static void pq_bee32 (float *IEEEramptr)
     if (pos < info.sampleperchannel) goto LOOP;
 }
 
+static void pq_bee32_negative (float *IEEEramptr)
+{
+    uint32_t pos;
+    uint32_t startpos;
+    uint32_t endpos;
+    float peakIEEE;
+    startpos = 0;
+    endpos = 0;
+    pos = 0;
+
+    LOOP:while (pos < info.sampleperchannel )
+    { 
+        if ( IEEEramptr[pos] < 0) break;
+        pos++;
+    }
+    startpos = pos;
+    peakIEEE = 0;
+    while (pos < info.sampleperchannel)
+    {
+        if (IEEEramptr[pos] < peakIEEE) peakIEEE = IEEEramptr[pos];
+        if( IEEEramptr[pos] > 0) break;
+        pos++;
+    }
+    endpos = pos;
+    for (pos = startpos; pos < endpos ; pos++)
+    {
+        IEEEramptr[pos] = peakIEEE * -1;
+    }
+    //endpos = pos;
+    if (pos < info.sampleperchannel) goto LOOP;
+}
+
 static void pq_do_pq(void)
 {
     pq_bee32(info.ramch1);
-    if (info.channels == 2) pq_bee32(info.ramch2);
+    pq_bee32_negative(info.ramch1);
+    if (info.channels == 2) 
+    {
+        pq_bee32(info.ramch2);
+        pq_bee32_negative(info.ramch2);
+    }
 }
 
 static void pq_openwritefile(void)
@@ -367,7 +406,7 @@ static void pq_do_writefile(void)
     free(info.ramch2);
 }
 
-static void pq_do_positive_array(void)
+static void pq_prepare_arrays(void)
 {
     info.fptr = fopen(info.filename,"rb");
     fseek(info.fptr, info.startdatachunk+4, SEEK_SET);
@@ -390,7 +429,7 @@ int main(int argc, char *argv[])
     printf("file: %s\n", argv[1]);
     pq_wavinfo();
     pq_allocate_array();
-    pq_do_positive_array();
+    pq_prepare_arrays();
     pq_zero_last_sample();
     printf("started scanning...\n") ;
     pq_do_pq();
