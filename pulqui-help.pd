@@ -49,8 +49,7 @@
 #X text 47 264 Second outlet: Outputs a "bang" if there's an error.;
 #N canvas 218 139 625 299 pulqui-explained 0;
 #X text 97 68 1) We copy the original file.;
-#X text 98 110 2) We make all values positive.;
-#X text 97 155 3) Then we scan which was the *highest value* that we have for the lap that *starts* whenever the sample exceeds a near zero value (0.01) and *stops* whenever the sample is smaller than the near zero value. We write the highest value on all that lap. We do this for all laps we find.;
+#X text 98 121 2) Then we scan which was the "highest value" that we have for the lap that "starts" whenever the sample exceeds a zero value and "stops" whenever the sample is smaller than a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value .;
 #X restore 610 474 pd pulqui-explained;
 #X text 33 73 The output file is written in the same dir as the source and an "f" is appended at the end. i.e an "path/foo.wav" source file generates a "path/foo.wavf" file.;
 #X msg 228 461 read \$1 wav-array;
@@ -191,12 +190,12 @@
 #X text 17 164 2) Turn DSP on (Pd's and subpatch).;
 #X text 21 293 3);
 #X text 45 326 Move the threshold slider., f 27;
-#X obj 56 384 bng 15 250 50 0 c empty empty 17 7 0 10 #fcfcfc #000000 #000000;
-#X text 76 383 <-- load example 2;
-#X text 22 381 4);
-#X text 48 413 Move the threshold slider., f 27;
+#X obj 56 387 bng 15 250 50 0 c empty empty 17 7 0 10 #fcfcfc #000000 #000000;
+#X text 76 386 <-- load example 2;
+#X text 22 384 4);
+#X text 48 416 Move the threshold slider., f 27;
 #X text 37 212 This is not a nice example as something starts happening at the beginning and end of the loop. Try the other 2 examples., f 47;
-#X text 25 510 5) These were laboratory examples. Try using "pulqui-limiter.pd" with some recorded material (vocal \, drums \, piano \, etc..)., f 47;
+#X text 25 485 5) These were laboratory examples. Try using "pulqui-limiter.pd" with some recorded material (vocal \, drums \, piano \, etc..)., f 47;
 #X connect 1 0 0 0;
 #X connect 2 0 0 1;
 #X connect 3 0 4 0;

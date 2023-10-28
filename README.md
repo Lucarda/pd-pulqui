@@ -21,20 +21,12 @@ We copy the original file:
          \/
 ```
 
-We make all values positive:
-
-```
-     /\  /\
-/\/\/  \/  \    
-               
-```
-
-Then we scan which was the **highest value** that we have for the lap that **starts** whenever the sample exceeds a near zero value and **stops** whenever the sample is smaller than the near zero value. We write the highest value on all that lap:
+Then we scan which was the **highest value** that we have for the lap that **starts** whenever the sample exceeds a zero value and **stops** whenever the sample is smaller than a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value :
 
 ```
     ___ ___
-_ _|   |   |
- | |   |   |
+_ _      
+
                
 ```
 
@@ -42,24 +34,16 @@ _ _|   |   |
 
 We playback both files together and we use the "side-chain" values to do the attenuation math on the original file.
 
-As an example the "original file" first waves from 0.5 to -0.5 and then from 1 to -1. 
+As an example the "original file" first waves from 0.5 to -0.5 and then from 1 to -1. We want to "limit" it so that it never exceeds 0.5. 
 
-```
-1
-       /\
-0 /\  /  \    
-    \/    \  /
--1         \/
-
-```
-We want to "limit" it so that it never exceeds 0.5. 
-
-We use the "side-chain file" to anticipate how much attenuation we need for that exact lap of time. i.e we know how much it will climb as soon as it starts to climb.
+We use the "side-chain file" to anticipate how much attenuation we need for that exact lap of time. i.e we know how much to attenuate as soon as the lap starts.
 
 ```
 1     ___ ___
-  _ _|   |   |
-0  | |   |   |
+  _ _
+0
+
+-1
                
 ```
 We ignore the first two values because they are equal or less than 0.5 but we use the following two because they are grater than 0.5.
