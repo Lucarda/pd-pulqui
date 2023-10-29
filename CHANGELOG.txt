@@ -1,5 +1,8 @@
 Changelog for pd-pulqui
 
+v0.2.0, dated 29-10-2023
+- Side-chain file generation changed. Now we scan which was the "highest value" that we have for the lap that "starts" whenever the sample exceeds a zero value and "stops" whenever the sample is smaller than a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value.
+
 v0.1.2, dated 16-10-2023
 - Change license.
 - Better handling of int conversion.
