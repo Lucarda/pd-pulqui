@@ -20,7 +20,7 @@ typedef struct _pulqui_tilde
     t_sample *x_bufpulqui;
     t_outlet *x_out1;
     t_outlet *x_out2;
-    int x_scanlen, x_len;
+    int x_scanlen, x_len, x_autoblk, x_blkchange;
     int x_pulquiblock;
 } t_pulqui_tilde;
 
@@ -42,15 +42,23 @@ static void pulqui_tilde_alloc(t_pulqui_tilde *x)
 static void *pulqui_tilde_new(t_floatarg len)
 {
     t_pulqui_tilde *x = (t_pulqui_tilde *)pd_new(pulqui_tilde_class);
-    if (len < 512)
+    
+    if (len > 1 && len < 512)
     {
         logpost(x,2,"pulqui~: block resized to a minimum of 512 samples.\
             ignoring requested size of '%d'", (int)len);
         x->x_len = 512;
+        pulqui_tilde_alloc(x);
+        x->x_autoblk=0;
+        
     }
     else
+    {
         x->x_len = (int)len;
-    pulqui_tilde_alloc(x);
+        pulqui_tilde_alloc(x); 
+        x->x_autoblk=0;
+    }
+    if(len == 0) x->x_autoblk=1;
     x->x_out1=outlet_new(&x->x_obj, &s_signal);
     x->x_out2=outlet_new(&x->x_obj, &s_signal);
 
@@ -189,12 +197,42 @@ static t_int *pulqui_tilde_perform(t_int *w)
 
 static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
 {
+    
+    if(x->x_autoblk)
+    {    
+        int blkarray[100] = {'0'};
+        int ms = (1000/20)/2;
+        t_float sr = sp[0]->s_sr / 1000.;
+        t_float foo = ms * sr;
+        int block = sp[0]->s_n;
+        int blockaccum = 0;
+        for(int i = 0; blockaccum < foo; i++)
+        {
+            blockaccum += block;
+            blkarray[i] = blockaccum;
+        }
+        int targetblk = blockaccum / 2;
+        int blk = 0;
+        for(int i = 0; blkarray[i] < (targetblk + 1); i++)
+        {
+            blk = blkarray[i+1];
+        }
+        //post("%d %d %d %d foo:%f blk: %d",sp[0]->s_n, (int)sp[0]->s_sr, ms, blockaccum, foo, blk);
+        if(x->x_len != blk)
+        {
+            x->x_len = blk;
+            pulqui_tilde_alloc(x);
+            logpost(x,2,"[pulqui~] latency: samples %d (%.2fms)", blk*2, ((blk*2)*sr)/1000);
+        }
+    }
+    
     if (x->x_len < sp[0]->s_n)
     {
         x->x_len = sp[0]->s_n;
         pulqui_tilde_alloc(x);
         logpost(x,2,"pulqui~: reallocated to a bigger block size of %d samples", x->x_len);
     }
+    
     dsp_add(pulqui_tilde_perform, 5, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[0]->s_n);
 }
 
