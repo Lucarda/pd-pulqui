@@ -175,7 +175,7 @@ static char pq_allocate_array(t_pulqui *x)
         }
         //logpost(x,2,"allocate bytes for channel 2: %d", (x->sampleperchannel * sizeof(float)) );
     }
-    logpost(x,2,"allocated bytes in RAM: %d MB", ((x->sampleperchannel * sizeof(float)) * x->channels) / 1000000 );
+    logpost(x,2,"allocated bytes in RAM: %lld MB", ((x->sampleperchannel * sizeof(float)) * x->channels) / 1000000 );
     return 1;
 }
 
