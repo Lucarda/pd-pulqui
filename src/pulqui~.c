@@ -22,7 +22,9 @@ typedef struct _pulqui_tilde
     t_outlet *x_out2;
     int x_scanlen, x_len, x_autoblk, x_blkchange;
     int x_pulquiblock;
+    t_float x_infoblk, x_infomslat;
 } t_pulqui_tilde;
+
 
 static void pulqui_tilde_alloc(t_pulqui_tilde *x)
 {
@@ -197,16 +199,16 @@ static t_int *pulqui_tilde_perform(t_int *w)
 
 static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
 {
+    t_float sr = sp[0]->s_sr / 1000.;
     
     if(x->x_autoblk)
     {    
         int blkarray[100] = {'0'};
         int ms = (1000/20)/2;
-        t_float sr = sp[0]->s_sr / 1000.;
-        t_float foo = ms * sr;
+        t_float nsamples = ms * sr;
         int block = sp[0]->s_n;
         int blockaccum = 0;
-        for(int i = 0; blockaccum < foo; i++)
+        for(int i = 0; blockaccum < nsamples; i++)
         {
             blockaccum += block;
             blkarray[i] = blockaccum;
@@ -217,12 +219,10 @@ static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
         {
             blk = blkarray[i+1];
         }
-        //post("%d %d %d %d foo:%f blk: %d",sp[0]->s_n, (int)sp[0]->s_sr, ms, blockaccum, foo, blk);
         if(x->x_len != blk)
         {
             x->x_len = blk;
             pulqui_tilde_alloc(x);
-            logpost(x,2,"[pulqui~] latency: samples %d (%.2fms)", blk*2, ((blk*2)*sr)/1000);
         }
     }
     
@@ -233,8 +233,18 @@ static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
         logpost(x,2,"pulqui~: reallocated to a bigger block size of %d samples", x->x_len);
     }
     
+    x->x_infoblk = x->x_len*2;
+    x->x_infomslat = ((1000/sr)*(x->x_len*2))/1000;
+    
     dsp_add(pulqui_tilde_perform, 5, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[0]->s_n);
 }
+
+static void pulqui_tilde_info(t_pulqui_tilde *x)
+{
+    logpost(x,2,"pulqui~ latency: %d samples (%.2fms)", (int)x->x_infoblk, x->x_infomslat);
+}
+
+
 
 static void pulqui_tilde_free(t_pulqui_tilde *x)
 {
@@ -256,4 +266,5 @@ void pulqui_tilde_setup(void)
         (t_method)pulqui_tilde_free, sizeof(t_pulqui_tilde), 0, A_DEFFLOAT, 0);
     CLASS_MAINSIGNALIN(pulqui_tilde_class, t_pulqui_tilde, x_f);
     class_addmethod(pulqui_tilde_class, (t_method)pulqui_tilde_dsp, gensym("dsp"), A_CANT, 0);
+    class_addmethod(pulqui_tilde_class, (t_method)pulqui_tilde_info, gensym("info"), 0); 
 }
