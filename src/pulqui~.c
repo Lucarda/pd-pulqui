@@ -23,6 +23,7 @@ typedef struct _pulqui_tilde
     int x_scanlen, x_len, x_autoblk, x_blkchange;
     int x_pulquiblock;
     t_float x_infoblk, x_infomslat;
+    char x_requestchangeblock;
 } t_pulqui_tilde;
 
 
@@ -44,7 +45,7 @@ static void pulqui_tilde_alloc(t_pulqui_tilde *x)
 static void *pulqui_tilde_new(t_floatarg len)
 {
     t_pulqui_tilde *x = (t_pulqui_tilde *)pd_new(pulqui_tilde_class);
-    
+    x->x_requestchangeblock = 0;    
     if (len > 1 && len < 512)
     {
         logpost(x,2,"pulqui~: block resized to a minimum of 512 samples.\
@@ -175,6 +176,13 @@ static t_int *pulqui_tilde_perform(t_int *w)
     t_sample *out1 = (t_sample *)(w[3]);
     t_sample *out2 = (t_sample *)(w[4]);
     int n = (int)w[5];
+    
+    if(x->x_requestchangeblock)
+    {
+        pulqui_tilde_alloc(x);
+        x->x_pulquiblock = 0;
+        x->x_requestchangeblock = 0;        
+    }    
 
     for (int i = 0; i < n; i++)
     {
@@ -185,14 +193,14 @@ static t_int *pulqui_tilde_perform(t_int *w)
         out1[i] = x->x_bufsignalout[i + x->x_pulquiblock];
         out2[i] = x->x_bufpulqui[i + x->x_pulquiblock];
     }
-
+    
     if(x->x_pulquiblock > ((x->x_len - n) - 1))
     {
         pulqui_tilde_do_pulqui(x);
         x->x_pulquiblock = 0;
     }
     else x->x_pulquiblock += n;
-
+    
     return (w+6);
 }
 
@@ -204,8 +212,8 @@ static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
     if(x->x_autoblk)
     {    
         int blkarray[100] = {'0'};
-        int ms = (1000/20)/2;
-        t_float nsamples = ms * sr;
+        int ms = (1000/20)/2; // half of 20hz in ms: 25ms
+        t_float nsamples = ms * sr; // how much samples we need to store 25ms
         int block = sp[0]->s_n;
         int blockaccum = 0;
         for(int i = 0; blockaccum < nsamples; i++)
@@ -222,14 +230,16 @@ static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
         if(x->x_len != blk)
         {
             x->x_len = blk;
-            pulqui_tilde_alloc(x);
+            //pulqui_tilde_alloc(x);
+            x->x_requestchangeblock = 1;
         }
     }
     
     if (x->x_len < sp[0]->s_n)
     {
         x->x_len = sp[0]->s_n;
-        pulqui_tilde_alloc(x);
+        //pulqui_tilde_alloc(x);
+        x->x_requestchangeblock = 1;
         logpost(x,2,"pulqui~: reallocated to a bigger block size of %d samples", x->x_len);
     }
     
