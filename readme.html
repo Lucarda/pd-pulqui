@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -139,6 +139,16 @@ _ _
 </code></pre>
 
 <p>If we limit such a signal with this limiter it starts limiting only the negative side (this is the intermodulation distortion produced by this limiter). The more we limit it at some point both sides are equal in amplitude.</p>
+
+<h2 id="Objects">Objects</h2>
+
+<p><strong>pulqui~</strong> scans live input</p>
+
+<p><strong>pulquilimiter~</strong> combines both signals from <strong>pulqui~</strong></p>
+
+<p><strong>pulqui</strong> generates a scan signal file from a given .wav file.</p>
+
+<p><strong>pulqui-limiter.pd</strong> abstraction to load files, generate their scans and combine them.</p>
 
 <hr />
 

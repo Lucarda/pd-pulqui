@@ -76,6 +76,16 @@ In a single vacuum tube triode circuit only one side of the signal enters the sa
 ```
 If we limit such a signal with this limiter it starts limiting only the negative side (this is the intermodulation distortion produced by this limiter). The more we limit it at some point both sides are equal in amplitude.
 
+## Objects ##
+
+**pulqui~** scans live input
+
+**pulquilimiter~** combines both signals from **pulqui~**
+
+**pulqui** generates a scan signal file from a given .wav file.
+
+**pulqui-limiter.pd** abstraction to load files, generate their scans and combine them.
+
 
 ----------------------------------
 
