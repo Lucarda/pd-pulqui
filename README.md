@@ -5,7 +5,7 @@ An audio limiter algorithm developed on [Pure-Data](https://github.com/pure-data
 It is named "Pulqui" because it sounds the same as "Pull key". It's the [Mapuche](https://en.wikipedia.org/wiki/Mapuche) word for "arrow" and was also used to name an Argentine jet aircraft prototype [->](https://en.wikipedia.org/wiki/FMA_I.Ae._27_Pulqui_I).
 
 
-The algorithm works scanning audio files or live signal. In both cases the scan generates a "side-chain" signal that is used to manipulate the original signal. The live signal process takes at least a theoretical 50ms (one 20hz period) of latency.
+The algorithm works scanning audio files or live signal. In both cases the scan generates a "side-chain" signal that is used to manipulate the original signal. The live signal process takes at least a theoretical latency of a little more than 25ms (half of a 20hz period).
 
 
 
@@ -20,7 +20,7 @@ From a given signal:
          \/
 ```
 
-We scan which was the **highest value** that we have for the lap that **starts** whenever the sample exceeds a zero value and **stops** whenever the sample is smaller than a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value :
+We scan which was the **highest value** that we have for the lap that **starts** whenever the sample exceeds a zero value and **stops** whenever the sample is very near a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value :
 
 ```
     ___ ___
@@ -103,4 +103,7 @@ If you need to specify Pd's location and an output dir do:
 make install PDDIR=<path/to/your/pd> PDLIBDIR=<path/you/want/the/output>
 ```
 
+## Repository ##
+
+https://github.com/Lucarda/pd-pulqui
 
