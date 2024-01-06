@@ -20,6 +20,7 @@ typedef struct _pulqui_tilde
     t_sample *x_bufpulqui;
     t_outlet *x_out1;
     t_outlet *x_out2;
+    t_outlet *x_outlet3;
     int x_scanlen, x_len, x_autoblk, x_blkchange;
     int x_pulquiblock;
     t_float x_infoblk, x_infomslat;
@@ -84,6 +85,7 @@ static void *pulqui_tilde_new(t_floatarg size)
     if(len == 0) x->x_autoblk=1;
     x->x_out1=outlet_new(&x->x_obj, &s_signal);
     x->x_out2=outlet_new(&x->x_obj, &s_signal);
+    x->x_outlet3 = outlet_new(&x->x_obj, &s_list);
 
     return (x);
 }
@@ -260,6 +262,14 @@ static void pulqui_tilde_dsp(t_pulqui_tilde *x, t_signal **sp)
     dsp_add(pulqui_tilde_perform, 5, x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[0]->s_n);
 }
 
+static void pulqui_tilde_info_outlet(t_pulqui_tilde *x)
+{
+    t_atom info[2];
+    SETFLOAT(info+0, (int)x->x_infoblk);
+    SETFLOAT(info+1, x->x_infomslat);
+    outlet_list(x->x_outlet3, &s_list, 2, info);
+}
+
 static void pulqui_tilde_info(t_pulqui_tilde *x)
 {
     logpost(x,2,"pulqui~ latency: %d samples (%.2fms)", (int)x->x_infoblk, x->x_infomslat);
@@ -285,4 +295,5 @@ void pulqui_tilde_setup(void)
     CLASS_MAINSIGNALIN(pulqui_tilde_class, t_pulqui_tilde, x_f);
     class_addmethod(pulqui_tilde_class, (t_method)pulqui_tilde_dsp, gensym("dsp"), A_CANT, 0);
     class_addmethod(pulqui_tilde_class, (t_method)pulqui_tilde_info, gensym("info"), 0);
+    class_addmethod(pulqui_tilde_class, (t_method)pulqui_tilde_info_outlet, gensym("info_outlet"), 0);
 }
