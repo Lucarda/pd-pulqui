@@ -82,7 +82,7 @@ static void *pulqui_tilde_new(t_floatarg size)
         x->x_autoblk=0;
         x->x_requestchangeblock = 1;
     }     
-    if(len == 0) x->x_autoblk=1;
+    if(len <= 0) x->x_autoblk=1;
     x->x_out1=outlet_new(&x->x_obj, &s_signal);
     x->x_out2=outlet_new(&x->x_obj, &s_signal);
     x->x_outlet3 = outlet_new(&x->x_obj, &s_list);

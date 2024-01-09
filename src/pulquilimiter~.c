@@ -70,7 +70,7 @@ static void *pulquilimiter_tilde_new(t_floatarg thresh, t_floatarg makeup)
     return (void *)x;
 }
 
-void pulquilimiter_tilde_setup(void) 
+ 
 {
     logpost(NULL,2,"---");
     logpost(NULL,2,"  pulquilimiter~ v0.1.0");
