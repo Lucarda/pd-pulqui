@@ -1,4 +1,5 @@
 #N canvas 297 61 779 583 12;
+#X declare -path pulqui;
 #N canvas 0 50 450 250 (subpatch) 0;
 #X array \$0-signal 8000 float 2;
 #X coords 0 1 8000 -1 200 140 1 0 0;
@@ -64,7 +65,7 @@
 #X connect 2 0 1 0;
 #X connect 4 0 0 0;
 #X connect 5 0 2 0;
-#X restore 662 507 pd stuff;
+#X restore 660 463 pd stuff;
 #X obj 704 140 bng 19 250 50 0 \$0-readme empty empty 0 -10 0 12 #fcfcfc #000000 #000000;
 #X text 561 139 see readme.html -->;
 #X text 225 205 <-- scope both signals;
@@ -88,6 +89,8 @@
 #X text 372 14 pulqui~ generates a “side-chain” signal that is used to manipulate the original signal via the pulquilimiter~ object or anything else you come up to. The process takes at least a theoretical latency of a little more than 25ms (half of a 20hz period). If the scanned signal contains a zero it is replaced by a one., f 51;
 #X text 227 172 <-- output latency via 3th outlet;
 #X obj 686 308 pulqui;
+#X obj 593 548 declare -path pulqui;
+#X text 578 506 use this in your patch to use the object(s), f 22;
 #X connect 3 0 2 0;
 #X connect 5 0 7 0;
 #X connect 7 0 4 0;

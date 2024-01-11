@@ -80,7 +80,7 @@ If we limit such a signal with this limiter it starts limiting only the negative
 
 **pulqui~** scans live input
 
-**pulquilimiter~** combines both signals from **pulqui~**
+**pulquilimiter~** combines both signals (signal and it's side-chain)
 
 **pulqui** generates a scan signal file from a given .wav file.
 
@@ -103,7 +103,7 @@ Alternatively you can find the binaries for your Pd/OS architecture in the [rele
 Download and extract the sources. Then it should be straight-forward (using Linux GCC, macOS Xcode or Windows MinGW) with:
 
 ```
-cd <path/to/the/pulqui-sources>
+cd <path/to/the/pulqui-folder>
 make install
 ```
 
@@ -117,3 +117,6 @@ make install PDDIR=<path/to/your/pd> PDLIBDIR=<path/you/want/the/output>
 
 https://github.com/Lucarda/pd-pulqui
 
+## Report bugs ##
+
+to https://github.com/Lucarda/pd-pulqui/issues
