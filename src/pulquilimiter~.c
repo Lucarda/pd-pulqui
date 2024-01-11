@@ -34,7 +34,7 @@ static t_int *pulquilimiter_tilde_perform(t_int *w)
         else 
             f = in1[i];
         if (x->x_makeup)
-            out[i] = f*((1-x->x_thresh)+0.998);
+            out[i] = f*(0.998/x->x_thresh);
         else
             out[i] = f;        
     }
@@ -70,7 +70,7 @@ static void *pulquilimiter_tilde_new(t_floatarg thresh, t_floatarg makeup)
     return (void *)x;
 }
 
- 
+void pulquilimiter_tilde_setup(void)
 {
     logpost(NULL,2,"---");
     logpost(NULL,2,"  pulquilimiter~ v0.1.0");
