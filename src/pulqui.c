@@ -428,10 +428,10 @@ static char pq_filer(t_pulqui *x, t_symbol *name)
     fd = canvas_open(x->x_canvas, filename, "", realdir, &realname, MAXPDSTRING, 0);
         if(fd < 0)
         {
-            logpost(NULL,2," ");
-            logpost(NULL,2,"***** pulqui *****");
+            logpost(x,2," ");
+            logpost(x,2,"***** pulqui *****");
             logpost(x, PD_ERROR, "pulqui: can't find file: %s", filename);
-            logpost(NULL,2,"******************");
+            logpost(x,2,"******************");
             outlet_bang(x->bang_out);
             return 0;
         }
@@ -476,10 +476,9 @@ void *pulqui_new(void)
 
 void pulqui_setup(void)
 {
-    logpost(NULL,2," ");
-    logpost(NULL,2,"***** pulqui *****");
-    logpost(NULL,2,"loaded version 0.2.0");
-    logpost(NULL,2,"******************");
+    logpost(NULL,2,"---");
+    logpost(NULL,2,"  pulqui v0.3.0");
+    logpost(NULL,2,"---");
     pulqui_class = class_new(gensym("pulqui"),
                     (t_newmethod)pulqui_new,
                     0 /*(t_method)pulqui_free*/,
