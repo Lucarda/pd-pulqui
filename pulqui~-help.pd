@@ -70,8 +70,8 @@
 #X text 225 205 <-- scope both signals;
 #X text 174 145 <-- print latency to the console;
 #X obj 27 22 cnv 10 300 6 empty empty pulqui~ 0 0 0 28 #dfdfdf #404040 0;
-#X obj 627 304 pulquilimiter~;
-#X text 552 305 see also:;
+#X obj 566 309 pulquilimiter~;
+#X text 491 310 see also:;
 #N canvas 455 151 423 288 reference 0;
 #X text 28 43 inlet: signal;
 #X text 28 67 outlet 1: delayed signal;
@@ -87,6 +87,7 @@
 #X text 544 241 see:;
 #X text 372 14 pulqui~ generates a “side-chain” signal that is used to manipulate the original signal via the pulquilimiter~ object or anything else you come up to. The process takes at least a theoretical latency of a little more than 25ms (half of a 20hz period). If the scanned signal contains a zero it is replaced by a one., f 51;
 #X text 227 172 <-- output latency via 3th outlet;
+#X obj 686 308 pulqui;
 #X connect 3 0 2 0;
 #X connect 5 0 7 0;
 #X connect 7 0 4 0;

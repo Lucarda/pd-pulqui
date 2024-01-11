@@ -60,7 +60,8 @@ static void *pulquilimiter_tilde_new(t_floatarg thresh, t_floatarg makeup)
 {
     t_pulquilimiter_tilde *x = (t_pulquilimiter_tilde *)pd_new(pulquilimiter_tilde_class);
 
-    x->x_thresh = thresh;
+    x->x_thresh = (thresh == 0) ? 1 : thresh;
+    x->x_makeup = makeup;
 
     x->x_in2=inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
     x->x_in3=floatinlet_new (&x->x_obj, &x->x_thresh);
