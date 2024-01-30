@@ -1,35 +1,24 @@
 lib.name = pulqui
 
-class.sources = pulqui.c
-            
+class.sources = \
+    ./src/pulqui.c \
+    ./src/pulqui~.c \
+    ./src/pulquilimiter~.c \
+    $(empty)
 
 datafiles = \
-pulqui-help.pd \
-pulqui-limiter.pd \
-README.md \
-pq-readme.txt\
-License.txt \
-
+    pulqui-help.pd \
+    pulqui~-help.pd \
+    pulquilimiter~-help.pd \
+    pulqui-limiter.pd \
+    pulqui-limiter(v0.1).pd \
+    README.md \
+    readme.html \
+    License.txt \
+    $(empty)
 
 datadirs = \
-example-files \
-
-
-makefiles = \
-pq-cli-app/Makefile \
-
-forLinux = datafiles += \
-pq-cli-app/pq \
-
-forDarwin = datafiles += \
-pq-cli-app/pq \
-
-
-forWindows = datafiles += \
-pq-cli-app/pq.exe \
-
-
+    example-files \
+    $(empty)
 
 include pd-lib-builder/Makefile.pdlibbuilder
-
-

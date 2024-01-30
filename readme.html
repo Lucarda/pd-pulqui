@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<TITLE>pd-pulqui</TITLE>
+<style>
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+p {
+    #font-weight: bold;
+}
+
+a {
+    font-weight: bold;
+}
+
+H1, H2, H3, H4, H5, H6, ol, ul, mark, PRE, p {
+    color: #3E4349;
+}
+#corpus {
+	width: 	    8.5in;
+	margin-left: 0.8in;
+}
+
+/* standard link */
+
+a:link {
+    text-decoration: none;
+	color: #4479cf;
+    #color: blue;
+}
+
+a:visited {
+    text-decoration: none;
+	color: #4479cf;
+    #color: blue;
+}
+
+a:hover {
+	#background-color:#eeeee4;
+}
+
+a:active {
+    text-decoration: none;
+	color: #4479cf;
+    #color: blue;
+}
+@media screen and (max-device-width: 700px) {
+    #corpus {
+    padding: 10px;
+	width: 	    auto;
+	margin-left: 6px;
+    }
+	H1 {font-size:   20pt;}
+	IMG {max-width: 100%;}
+}
+
+/* responsive css for small "browser window" */
+
+@media screen and (max-width: 700px) {
+    #corpus {
+    padding: 10px;
+	width: 	    auto;
+	margin-left: 6px;
+    }
+	H1 {font-size:   20pt;}
+	IMG {max-width: 100%;}
+}
+</style>
+</head>
+<body>
+<div id=corpus>
+<body>
+<h1 id="pd-pulqui">pd-pulqui</h1>
+
+<p>An audio limiter algorithm developed on <a href="https://github.com/pure-data/pure-data">Pure-Data</a>.</p>
+
+<p>It is named &ldquo;Pulqui&rdquo; because it sounds the same as &ldquo;Pull key&rdquo;. It&rsquo;s the <a href="https://en.wikipedia.org/wiki/Mapuche">Mapuche</a> word for &ldquo;arrow&rdquo; and was also used to name an Argentine jet aircraft prototype <a href="https://en.wikipedia.org/wiki/FMA_I.Ae._27_Pulqui_I">-></a>.</p>
+
+<p>The algorithm works scanning audio files or live signal. In both cases the scan generates a &ldquo;side-chain&rdquo; signal that is used to manipulate the original signal. The live signal process takes at least a theoretical latency of a little more than 25ms (half of a 20hz period).</p>
+
+<h2 id="The..side-chain..signal.">The &ldquo;side-chain&rdquo; signal.</h2>
+
+<p>From a given signal:</p>
+
+<pre><code>     /\
+/\  /  \    
+  \/    \  /
+         \/
+</code></pre>
+
+<p>We scan which was the <strong>highest value</strong> that we have for the lap that <strong>starts</strong> whenever the sample exceeds a zero value and <strong>stops</strong> whenever the sample is very near a zero value. We write the highest value on all that lap. We do the same for the negative laps but we invert the lowest value :</p>
+
+<pre><code>    ___ ___
+_ _      
+</code></pre>
+
+<h2 id="Combination.">Combination.</h2>
+
+<p>We use the &ldquo;side-chain&rdquo; values to do the attenuation math on the original signal.</p>
+
+<p>The &ldquo;original signal&rdquo; first waves from 0.5 to -0.5 and then from 1 to -1. We want to &ldquo;limit&rdquo; it so that it never exceeds 0.5.</p>
+
+<p>We use the &ldquo;side-chain signal&rdquo; to anticipate how much attenuation we need for that exact lap of time. i.e we know how much to attenuate as soon as the lap starts.</p>
+
+<pre><code>1     ___ ___
+  _ _
+0
+
+-1
+</code></pre>
+
+<p>We ignore the first two values because they are equal or less than 0.5 but we use the following two because they are grater than 0.5.</p>
+
+<p>Limited output:</p>
+
+<pre><code>1
+
+0 /\  /\      
+    \/  \/    
+-1         
+</code></pre>
+
+<h2 id="Intermodulation.Distortion.">Intermodulation Distortion.</h2>
+
+<p>Intermodulation distortion may be introduced with this limiter.</p>
+
+<p>For example in an edge case:</p>
+
+<p>In a single vacuum tube triode circuit only one side of the signal enters the saturation area (this is the intermodulation distortion produced by the triode) so the distorted signal, along with other things, waves less on the positive side than on the negative one.</p>
+
+<pre><code>1
+
+0_._ _._ _  
+    .   .
+-1  
+</code></pre>
+
+<p>If we limit such a signal with this limiter it starts limiting only the negative side (this is the intermodulation distortion produced by this limiter). The more we limit it at some point both sides are equal in amplitude.</p>
+
+<h2 id="Objects">Objects</h2>
+
+<p><strong>pulqui~</strong> scans live input</p>
+
+<p><strong>pulquilimiter~</strong> combines both signals (signal and it&rsquo;s side-chain)</p>
+
+<p><strong>pulqui</strong> generates a scan signal file from a given .wav file.</p>
+
+<p><strong>pulqui-limiter.pd</strong> abstraction to load files, generate their scans and combine them.</p>
+
+<hr />
+
+<h2 id="Installation.">Installation.</h2>
+
+<p>The easiest way is to open Pd (you must have Pd installed to use pulqui) and go to the menu <strong>help/find externals</strong> and type &ldquo;pulqui&rdquo; on the search bar. Hopefully your search results on a high-lighted pulqui version that matches your Pd and OS architecture. Click on it and the automatic installation will start.</p>
+
+<p>Alternatively you can find the binaries for your Pd/OS architecture in the <a href="https://github.com/Lucarda/pd-pulqui/releases">release</a> section. Download and extract the one you need and place it on your Pd&rsquo;s externals folder.</p>
+
+<h2 id="Compiling">Compiling</h2>
+
+<p>Download and extract the sources. Then it should be straight-forward (using Linux GCC, macOS Xcode or Windows MinGW) with:</p>
+
+<pre><code>cd &lt;path/to/the/pulqui-folder&gt;
+make install
+</code></pre>
+
+<p>If you need to specify Pd&rsquo;s location and an output dir do:</p>
+
+<pre><code>make install PDDIR=&lt;path/to/your/pd&gt; PDLIBDIR=&lt;path/you/want/the/output&gt;
+</code></pre>
+
+<h2 id="Repository">Repository</h2>
+
+<p><a href="https://github.com/Lucarda/pd-pulqui">https://github.com/Lucarda/pd-pulqui</a></p>
+
+<h2 id="Report.bugs">Report bugs</h2>
+
+<p>to <a href="https://github.com/Lucarda/pd-pulqui/issues">https://github.com/Lucarda/pd-pulqui/issues</a></p>
+
+</body>
+</html>
+</body>
+</html>
