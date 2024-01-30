@@ -171,8 +171,6 @@
 #X text 48 416 Move the threshold slider., f 27;
 #X text 37 212 This is not a nice example as something starts happening at the beginning and end of the loop. Try the other 2 examples., f 47;
 #X text 25 485 5) These were laboratory examples. Try using "pulqui-limiter.pd" with some recorded material (vocal \, drums \, piano \, etc..)., f 47;
-#X obj 357 585 declare -path pulqui;
-#X text 354 550 use this in your patch to use the object(s), f 23;
 #X obj 831 272 tgl 15 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;
 #X text 710 271 auto make-up -->;
 #X connect 1 0 0 0;
@@ -182,8 +180,8 @@
 #X connect 4 1 5 0;
 #X connect 9 0 14 0;
 #X connect 11 0 10 0;
-#X connect 37 0 0 3;
-#X restore 603 547 pd pulqui-limiter-explained;
+#X connect 35 0 0 3;
+#X restore 604 512 pd pulqui-limiter-explained;
 #X text 27 164 Source files can be 16 \, 24 or 32(floating point) bit. The output file is the same bit-depth as the source.;
 #X text 41 219 Inlet: Takes the message "read <path/file>";
 #X text 41 253 First outlet: On success outputs the path/name of the generated file.;
@@ -204,6 +202,11 @@
 #X text 633 467 see readme.html -->;
 #X obj 27 22 cnv 10 300 6 empty empty pulqui 0 0 0 28 #dfdfdf #404040 0;
 #X text 28 65 The pulqui object reads a WAV file and creates another one with values to be used by the Pulqui-limiter.pd.;
+#X obj 380 633 declare -path pulqui;
+#X text 378 598 use this in your patch to use the object(s), f 22;
+#X text 546 554 see also:;
+#X obj 633 554 pulqui~;
+#X obj 695 554 pulquilimiter~;
 #X connect 4 0 5 0;
 #X connect 5 0 2 0;
 #X connect 5 1 3 0;
