@@ -11,6 +11,7 @@ datafiles = \
     pulqui~-help.pd \
     pulquilimiter~-help.pd \
     pulqui-limiter.pd \
+    pulqui-limiter(v0.1).pd \
     README.md \
     readme.html \
     License.txt \
