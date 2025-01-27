@@ -86,6 +86,9 @@ If we limit such a signal with this limiter it starts limiting only the negative
 
 **pulqui-limiter.pd** abstraction to load files, generate their scans and combine them.
 
+**pqcrossover~** 4th order Linkwitz-Riley filters.
+
+**pqpeak~** reports maximum peak in dBFS from a 2048 sample buffer.
 
 ----------------------------------
 

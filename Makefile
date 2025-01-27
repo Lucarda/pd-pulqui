@@ -4,6 +4,8 @@ class.sources = \
     ./src/pulqui.c \
     ./src/pulqui~.c \
     ./src/pulquilimiter~.c \
+    ./src/pqcrossover~.c \
+    ./src/pqpeak~.c \
     $(empty)
 
 datafiles = \
@@ -12,6 +14,8 @@ datafiles = \
     pulquilimiter~-help.pd \
     pulqui-limiter.pd \
     pulqui-limiter(v0.1).pd \
+    pqcrossover~-help.pd \
+    pqpeak~-help.pd \
     README.md \
     readme.html \
     License.txt \
